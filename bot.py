@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
-# Load environment variables from .env file
+print("✅ MarsStreamBot launched...")
+
 load_dotenv()
 
 API_ID = int(os.getenv("API_ID"))
@@ -19,7 +20,7 @@ IMG_BB_API_KEY = os.getenv("IMG_BB_API_KEY")
 
 bot = Client("MarsStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# === Helpers ===
+# ==== Helpers ====
 
 def encode_file_id(file_id):
     return base64.urlsafe_b64encode(file_id.encode()).decode()
@@ -52,7 +53,7 @@ def extract_video_link(url):
         pass
     return None
 
-# === Handlers ===
+# ==== Commands ====
 
 @bot.on_message(filters.command("start", prefixes=["/", "!", "."]))
 async def start(client, message: Message):
@@ -78,14 +79,16 @@ async def extract_cmd(client, message: Message):
     else:
         await message.reply("❌ No `.mp4` found.")
 
+# ==== Media Handler ====
+
 @bot.on_message(filters.media)
 async def handle_media(client, message: Message):
-    # ⛔ Prevent loop by skipping messages from storage group
+    # ⛔ Avoid infinite loop from storage group
     if message.chat.id == STORAGE_CHAT_ID:
         return
 
     try:
-        # 🖼️ Image Upload to imgbb
+        # 🖼️ Handle image upload to imgbb
         if message.photo:
             path = await message.download()
             with open(path, "rb") as f:
@@ -104,8 +107,9 @@ async def handle_media(client, message: Message):
             else:
                 return await message.reply("❌ imgbb upload failed.")
 
-        # 🎞️ Video/Audio/Doc → forward to storage group
+        # 🎞️ Handle streamable media
         sent = await message.forward(STORAGE_CHAT_ID)
+
         file_id = (
             sent.video.file_id if sent.video else
             sent.document.file_id if sent.document else
@@ -134,6 +138,8 @@ async def handle_media(client, message: Message):
 
     except Exception as e:
         await message.reply(f"❌ Error: {e}")
+
+# ==== Callback Buttons ====
 
 @bot.on_callback_query()
 async def callback_handler(client, cb):
@@ -170,5 +176,10 @@ async def callback_handler(client, cb):
         await cb.answer("❌ Callback error", show_alert=True)
         await cb.message.reply(f"⚠️ Error: {e}")
 
-# === Run Bot ===
-bot.run()
+# ==== Auto-Restart Bot ====
+
+while True:
+    try:
+        bot.run()
+    except Exception as e:
+        print(f"🔥 Bot crashed, restarting...\n{e}")
