@@ -1,5 +1,5 @@
 pyrogram==2.0.106
-tgcrypto
-beautifulsoup4
+tgcrypto==1.2.5
 requests
+beautifulsoup4
 python-dotenv
