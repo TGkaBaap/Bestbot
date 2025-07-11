@@ -43,7 +43,7 @@ def extract_video_link(url):
             if link and link.endswith(".mp4"):
                 return link
 
-        mp4s = re.findall(r'(https?://[^\s"\']+\.mp4)', html)
+        mp4s = re.findall(r'(https?://[^\s"\']+\\.mp4)', html)
         if mp4s:
             return mp4s[0]
     except:
@@ -85,12 +85,10 @@ async def handle_media(client, message: Message):
             with open(path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode()
             os.remove(path)
-
             res = requests.post("https://api.imgbb.com/1/upload", data={
                 "key": IMG_BB_API_KEY,
                 "image": encoded
             })
-
             if res.ok and res.json().get("success"):
                 url = res.json()["data"]["url"]
                 kb = InlineKeyboardMarkup([[InlineKeyboardButton("📷 View Image", url=url)]])
@@ -104,7 +102,6 @@ async def handle_media(client, message: Message):
             sent.document.file_id if sent.document else
             sent.audio.file_id if sent.audio else None
         )
-
         if not file_id:
             return await message.reply("❌ Unsupported media type.")
 
@@ -132,30 +129,28 @@ async def handle_media(client, message: Message):
 async def callback_handler(client, cb):
     try:
         msg = cb.message
+        if not msg.reply_markup:
+            return await cb.answer("⛔ Already used", show_alert=True)
+
         lines = msg.text.splitlines()
         stream_line = next((l for l in lines if l.startswith("🔗 ")), None)
         fileid_line = next((l for l in lines if l.startswith("🆔 ")), None)
         stream_link = stream_line.replace("🔗 ", "") if stream_line else None
         file_id = fileid_line.replace("🆔 ", "") if fileid_line else None
 
+        await cb.message.edit_reply_markup(reply_markup=None)
+
         if cb.data == "get_link":
             if stream_link:
-                await cb.answer("📋 Stream link copied!", show_alert=True)
                 await cb.message.reply(stream_link)
-            else:
-                await cb.answer("❌ Stream link not found.", show_alert=True)
             return
 
         elif cb.data == "get_id":
             if file_id:
-                await cb.answer("📋 File ID copied!", show_alert=True)
                 await cb.message.reply(file_id)
-            else:
-                await cb.answer("❌ File ID not found.", show_alert=True)
             return
 
         elif cb.data == "get_embed" and stream_link:
-            await cb.answer("📥 Sending embed code...", show_alert=False)
             embed_code = f"""<video controls id="video-id" style="height: auto; width: 100%;">
   <source src="{stream_link}" type="video/mp4">
 </video>
@@ -169,9 +164,7 @@ async def callback_handler(client, cb):
             return
 
     except Exception as e:
-        await cb.answer("❌ Callback error", show_alert=True)
-        await cb.message.reply(f"⚠️ Error: {e}")
+        await cb.message.reply(f"⚠️ Callback Error: {e}")
 
 if __name__ == "__main__":
-    print("✅ Bot is starting...")
     bot.run()
