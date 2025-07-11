@@ -40,7 +40,7 @@ def extract_video_link(url):
             if link and link.endswith(".mp4"):
                 return link
 
-        mp4s = re.findall(r'(https?://[^\\s"\\']+\\.mp4)', html)
+        mp4s = re.findall(r'(https?://[^\s"\']+\.mp4)', html)
         if mp4s:
             return mp4s[0]
     except:
@@ -52,7 +52,8 @@ async def start(client, message: Message):
     await message.reply(
         "**👋 Welcome to MARS Stream & Extract Bot!**\n\n"
         "📤 *Send any video, audio, photo, or document to get a permanent stream link.*\n"
-        "🔎 *Use `/extract <url>` to get `.mp4` links from websites.*",
+        "🔎 *Use `/extract <url>` to get `.mp4` links from websites.*\n\n"
+        "_Made with ❤️ by @BEASTANKITYT_",
         quote=True
     )
 
