@@ -20,7 +20,6 @@ IMG_BB_API_KEY = os.getenv("IMG_BB_API_KEY")
 
 bot = Client("MarsStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# === Helpers ===
 def encode_file_id(file_id):
     return base64.urlsafe_b64encode(file_id.encode()).decode()
 
@@ -51,8 +50,7 @@ def extract_video_link(url):
         pass
     return None
 
-# === /start command ===
-@bot.on_message(filters.command("start", prefixes=["/", "!", "."]))
+@bot.on_message(filters.command("start"))
 async def start(client, message: Message):
     await message.reply(
         "**👋 Welcome to MARS Stream & Extract Bot!**\n\n"
@@ -63,8 +61,7 @@ async def start(client, message: Message):
         quote=True
     )
 
-# === /extract command ===
-@bot.on_message(filters.command("extract", prefixes=["/", "!", "."]))
+@bot.on_message(filters.command("extract"))
 async def extract_cmd(client, message: Message):
     if len(message.command) < 2:
         return await message.reply("❗ Usage: `/extract <url>`", quote=True)
@@ -77,7 +74,6 @@ async def extract_cmd(client, message: Message):
     else:
         await message.reply("❌ No `.mp4` found.")
 
-# === Media handler ===
 @bot.on_message(filters.media)
 async def handle_media(client, message: Message):
     if message.chat.id == STORAGE_CHAT_ID:
@@ -132,7 +128,6 @@ async def handle_media(client, message: Message):
     except Exception as e:
         await message.reply(f"❌ Error: {e}")
 
-# === Inline Button Callback ===
 @bot.on_callback_query()
 async def callback_handler(client, cb):
     try:
@@ -177,9 +172,6 @@ async def callback_handler(client, cb):
         await cb.answer("❌ Callback error", show_alert=True)
         await cb.message.reply(f"⚠️ Error: {e}")
 
-# === Auto-Restart ===
-while True:
-    try:
-        bot.run()
-    except Exception as e:
-        print(f"🔥 Bot crashed, restarting...\n{e}")
+if __name__ == "__main__":
+    print("✅ Bot is starting...")
+    bot.run()
