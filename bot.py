@@ -20,8 +20,7 @@ IMG_BB_API_KEY = os.getenv("IMG_BB_API_KEY")
 
 bot = Client("MarsStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# ==== Helpers ====
-
+# === Helpers ===
 def encode_file_id(file_id):
     return base64.urlsafe_b64encode(file_id.encode()).decode()
 
@@ -48,13 +47,11 @@ def extract_video_link(url):
         mp4s = re.findall(r'(https?://[^\s"\']+\.mp4)', html)
         if mp4s:
             return mp4s[0]
-
     except:
         pass
     return None
 
-# ==== Commands ====
-
+# === /start command ===
 @bot.on_message(filters.command("start", prefixes=["/", "!", "."]))
 async def start(client, message: Message):
     await message.reply(
@@ -66,6 +63,7 @@ async def start(client, message: Message):
         quote=True
     )
 
+# === /extract command ===
 @bot.on_message(filters.command("extract", prefixes=["/", "!", "."]))
 async def extract_cmd(client, message: Message):
     if len(message.command) < 2:
@@ -79,16 +77,13 @@ async def extract_cmd(client, message: Message):
     else:
         await message.reply("❌ No `.mp4` found.")
 
-# ==== Media Handler ====
-
+# === Media handler ===
 @bot.on_message(filters.media)
 async def handle_media(client, message: Message):
-    # ⛔ Avoid infinite loop from storage group
     if message.chat.id == STORAGE_CHAT_ID:
         return
 
     try:
-        # 🖼️ Handle image upload to imgbb
         if message.photo:
             path = await message.download()
             with open(path, "rb") as f:
@@ -107,9 +102,7 @@ async def handle_media(client, message: Message):
             else:
                 return await message.reply("❌ imgbb upload failed.")
 
-        # 🎞️ Handle streamable media
         sent = await message.forward(STORAGE_CHAT_ID)
-
         file_id = (
             sent.video.file_id if sent.video else
             sent.document.file_id if sent.document else
@@ -139,8 +132,7 @@ async def handle_media(client, message: Message):
     except Exception as e:
         await message.reply(f"❌ Error: {e}")
 
-# ==== Callback Buttons ====
-
+# === Inline Button Callback ===
 @bot.on_callback_query()
 async def callback_handler(client, cb):
     try:
@@ -152,12 +144,20 @@ async def callback_handler(client, cb):
         file_id = fileid_line.replace("🆔 ", "") if fileid_line else None
 
         if cb.data == "get_link":
-            await cb.answer("📋 Stream link copied!", show_alert=True)
-            await cb.message.reply(stream_link or "❌ Not found.")
+            if stream_link:
+                await cb.answer("📋 Stream link copied!", show_alert=True)
+                await cb.message.reply(stream_link)
+            else:
+                await cb.answer("❌ Stream link not found.", show_alert=True)
+            return
 
         elif cb.data == "get_id":
-            await cb.answer("📋 File ID copied!", show_alert=True)
-            await cb.message.reply(file_id or "❌ Not found.")
+            if file_id:
+                await cb.answer("📋 File ID copied!", show_alert=True)
+                await cb.message.reply(file_id)
+            else:
+                await cb.answer("❌ File ID not found.", show_alert=True)
+            return
 
         elif cb.data == "get_embed" and stream_link:
             await cb.answer("📥 Sending embed code...", show_alert=False)
@@ -171,13 +171,13 @@ async def callback_handler(client, cb):
                 f.write(embed_code)
             await cb.message.reply_document(fname, caption="📁 Embed Code")
             os.remove(fname)
+            return
 
     except Exception as e:
         await cb.answer("❌ Callback error", show_alert=True)
         await cb.message.reply(f"⚠️ Error: {e}")
 
-# ==== Auto-Restart Bot ====
-
+# === Auto-Restart ===
 while True:
     try:
         bot.run()
